@@ -19,7 +19,7 @@ import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
-
+from tqdm import tqdm
 import modules.commons as commons
 import utils
 from data_utils import TextAudioSpeakerLoader, TextAudioCollate
@@ -143,7 +143,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
 
     net_g.train()
     net_d.train()
-    for batch_idx, items in enumerate(train_loader):
+    for batch_idx, items in enumerate(tqdm(train_loader)):
         c, f0, spec, y, spk, lengths, uv = items
         g = spk.cuda(rank, non_blocking=True)
         spec, y = spec.cuda(rank, non_blocking=True), y.cuda(rank, non_blocking=True)
