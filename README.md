@@ -6,6 +6,10 @@
 
 #### ✨ A client supports real-time conversion: [w-okada/voice-changer](https://github.com/w-okada/voice-changer)
 
+## Warning!!!
+
+This project is an open source, offline project, and all members of SvcDevelopTeam and all developers and maintainers of this project (hereinafter referred to as contributors) have no control over this project.  The contributor of this project has never provided any organization or individual with any form of assistance, including but not limited to data set extraction, data set processing, computing support, training support, infering, etc.  Contributors to the project do not and cannot know what users are using the project for.  Therefore, all AI models and synthesized audio based on the training of this project have nothing to do with the contributors of this project.  All problems arising therefrom shall be borne by the user.
+
 ## 📏 Terms of Use
 
 # Warning: Please solve the authorization problem of the dataset on your own. You shall be solely responsible for any problems caused by the use of non-authorized datasets for training and all consequences thereof.The repository and its maintainer, svc develop team, have nothing to do with the consequences!
@@ -13,8 +17,8 @@
 1. This project is established for academic exchange purposes only and is intended for communication and learning purposes. It is not intended for production environments. 
 2. Any videos based on sovits that are published on video platforms must clearly indicate in the description that they are used for voice changing and specify the input source of the voice or audio, for example, using videos or audios published by others and separating the vocals as input source for conversion, which must provide clear original video or music links. If your own voice or other synthesized voices from other commercial vocal synthesis software are used as the input source for conversion, you must also explain it in the description.
 3. You shall be solely responsible for any infringement problems caused by the input source. When using other commercial vocal synthesis software as input source, please ensure that you comply with the terms of use of the software. Note that many vocal synthesis engines clearly state in their terms of use that they cannot be used for input source conversion.
-4. Continuing to use this project is deemed as agreeing to the relevant provisions stated in this repository README. This repository README has the obligation to persuade, and is not responsible for any subsequent problems that may arise.
-5. If you distribute this repository's code or publish any results produced by this project publicly (including but not limited to video sharing platforms), please indicate the original author and code source (this repository).
+4. It is forbidden to use the project to engage in illegal activities, religious and political activities. The project developers firmly resist the above activities. If they do not agree with this article, the use of the project is prohibited.
+5. Continuing to use this project is deemed as agreeing to the relevant provisions stated in this repository README. This repository README has the obligation to persuade, and is not responsible for any subsequent problems that may arise.
 6. If you use this project for any other plan, please contact and inform the author of this repository in advance. Thank you very much.
 
 ## 🆕 Update!
@@ -34,10 +38,11 @@ The singing voice conversion model uses SoftVC content encoder to extract source
 - The dataset creation and training process are consistent with version 3.0, but the model is completely non-universal, and the data set needs to be fully pre-processed again.
 - Added an option 1: automatic pitch prediction for vc mode, which means that you don't need to manually enter the pitch key when converting speech, and the pitch of male and female voices can be automatically converted. However, this mode will cause pitch shift when converting songs.
 - Added option 2: reduce timbre leakage through k-means clustering scheme, making the timbre more similar to the target timbre.
-
+- Added option 3: Added [NSF-HIFIGAN Enhancer](https://github.com/yxlllc/DDSP-SVC), which has certain sound quality enhancement effect on some models with few train-sets, but has negative effect on well-trained models, so it is closed by default
+  
 ## 💬 About Python Version
 
-After conducting tests, we believe that the project runs stably on Python version 3.8.9.
+After conducting tests, we believe that the project runs stably on `Python 3.8.9`.
 
 ## 📥 Pre-trained Model Files
 
@@ -60,6 +65,20 @@ wget -P hubert/ http://obs.cstcloud.cn/share/obs/sankagenkeshi/checkpoint_best_l
 Get them from svc-develop-team(TBD) or anywhere else.
 
 Although the pretrained model generally does not cause any copyright problems, please pay attention to it. For example, ask the author in advance, or the author has indicated the feasible use in the description clearly.
+
+#### **Optional(Select as Required)**
+
+If you are using the NSF-HIFIGAN enhancer, you will need to download the pre-trained NSF-HIFIGAN model, or not if you do not need it.
+
+- Pre-trained NSF-HIFIGAN Vocoder: [nsf_hifigan_20221211.zip](https://github.com/openvpi/vocoders/releases/download/nsf-hifigan-v1/nsf_hifigan_20221211.zip)
+  - Unzip and place the four files under the `pretrain/nsf_hifigan` directory
+
+```shell
+# nsf_hifigan
+https://github.com/openvpi/vocoders/releases/download/nsf-hifigan-v1/nsf_hifigan_20221211.zip
+# Alternatively, you can manually download and place it in the pretrain/nsf_hifigan directory
+# URL：https://github.com/openvpi/vocoders/releases/tag/nsf-hifigan-v1
+```
 
 ## 📊 Dataset Preparation
 
@@ -89,19 +108,29 @@ dataset_raw
 
 ## 🛠️ Preprocessing
 
-1. Resample to 44100Hz and mono
+### 0. Slice audio
+
+Slice to `5s - 15s`, a bit longer is no problem. Too long may lead to `torch.cuda.OutOfMemoryError` during training or even pre-processing.
+
+By using [audio-slicer-GUI](https://github.com/flutydeer/audio-slicer) or [audio-slicer-CLI](https://github.com/openvpi/audio-slicer)
+
+In general, only the `Minimum Interval` needs to be adjusted. For statement audio it usually remains default. For singing audio it can be adjusted to `100` or even `50`.
+
+After slicing, delete audio that is too long and too short.
+
+### 1. Resample to 44100Hz and mono
 
 ```shell
 python resample.py
 ```
 
-2. Automatically split the dataset into training and validation sets, and generate configuration files
+### 2. Automatically split the dataset into training and validation sets, and generate configuration files.
 
 ```shell
 python preprocess_flist_config.py
 ```
 
-3. Generate hubert and f0
+### 3. Generate hubert and f0
 
 ```shell
 python preprocess_hubert_f0.py
@@ -140,10 +169,11 @@ Required parameters:
 
 Optional parameters: see the next section
 - `-lg` | `--linear_gradient`: The cross fade length of two audio slices in seconds. If there is a discontinuous voice after forced slicing, you can adjust this value. Otherwise, it is recommended to use the default value of 0.
-- `-fmp` | `--f0_mean_pooling`: Apply mean filter (pooling) to f0，which may improve some hoarse sounds. Enabling this option will reduce inference speed.
+- `-fmp` | `--f0_mean_pooling`: Apply mean filter (pooling) to f0, which may improve some hoarse sounds. Enabling this option will reduce inference speed.
 - `-a` | `--auto_predict_f0`: automatic pitch prediction for voice conversion, do not enable this when converting songs as it can cause serious pitch issues.
 - `-cm` | `--cluster_model_path`: path to the clustering model, fill in any value if clustering is not trained.
 - `-cr` | `--cluster_infer_ratio`: proportion of the clustering solution, range 0-1, fill in 0 if the clustering model is not trained.
+- `-eh` | `--enhance`: Whether to use NSF_HIFIGAN enhancer, this option has certain effect on sound quality enhancement for some models with few training sets, but has negative effect on well-trained models, so it is turned off by default.
 
 ## 🤔 Optional Settings
 
@@ -161,20 +191,23 @@ Introduction: The clustering scheme can reduce timbre leakage and make the train
 The existing steps before clustering do not need to be changed. All you need to do is to train an additional clustering model, which has a relatively low training cost.
 
 - Training process:
-  - Train on a machine with a good CPU performance. According to my experience, it takes about 4 minutes to train each speaker on a Tencent Cloud 6-core CPU.
-  - Execute "python cluster/train_cluster.py". The output of the model will be saved in "logs/44k/kmeans_10000.pt".
+  - Train on a machine with good CPU performance. According to my experience, it takes about 4 minutes to train each speaker on a Tencent Cloud machine with 6-core CPU.
+  - Execute `python cluster/train_cluster.py`. The output model will be saved in `logs/44k/kmeans_10000.pt`.
 - Inference process:
-  - Specify "cluster_model_path" in inference_main.
-  - Specify "cluster_infer_ratio" in inference_main, where 0 means not using clustering at all, 1 means only using clustering, and usually 0.5 is sufficient.
+  - Specify `cluster_model_path` in `inference_main.py`.
+  - Specify `cluster_infer_ratio` in `inference_main.py`, where `0` means not using clustering at all, `1` means only using clustering, and usually `0.5` is sufficient.
 
 ### F0 mean filtering
 
-Introduction: The mean filtering of F0 can effectively reduce the hoarse sound caused by the predicted fluctuation of pitch (the hoarse sound caused by reverb or harmony can not be eliminated temporarily). This function has been greatly improved on some songs. If the song appears dumb after reasoning, it can be considered to open.
-- Set f0_mean_pooling to true in inference_main
+Introduction: The mean filtering of F0 can effectively reduce the hoarse sound caused by the predicted fluctuation of pitch (the hoarse sound caused by reverb or harmony can not be eliminated temporarily). This function has been greatly improved on some songs. However, some songs are out of tune. If the song appears dumb after reasoning, it can be considered to open.
+
+- Set `f0_mean_pooling` to true in `inference_main.py`
 
 ### [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1kv-3y2DmZo0uya8pEr1xk7cSB-4e_Pct?usp=sharing) [sovits4_for_colab.ipynb](https://colab.research.google.com/drive/1kv-3y2DmZo0uya8pEr1xk7cSB-4e_Pct?usp=sharing)
 
-#### [23/03/16] No longer need to download hubert manually
+**[23/03/16] No longer need to download hubert manually**
+
+**[23/04/14] Support NSF_HIFIGAN enhancer**
 
 ## 📤 Exporting to Onnx
 
@@ -190,8 +223,11 @@ Use [onnx_export.py](https://github.com/svc-develop-team/so-vits-svc/blob/4.0/on
 ### UI support for Onnx models
 
 - [MoeSS](https://github.com/NaruseMioShirakana/MoeSS)
+  - [Hubert4.0](https://huggingface.co/NaruseMioShirakana/MoeSS-SUBModel)
 
-Note: For Hubert Onnx models, please use the models provided by MoeSS. Currently, they cannot be exported on their own (Hubert in fairseq has many unsupported operators and things involving constants that can cause errors or result in problems with the input/output shape and results when exported.)  [Hubert4.0](https://huggingface.co/NaruseMioShirakana/MoeSS-SUBModel)
+Note: For Hubert Onnx models, please use the models provided by MoeSS. Currently, they cannot be exported on their own (Hubert in fairseq has many unsupported operators and things involving constants that can cause errors or result in problems with the input/output shape and results when exported.)
+
+CppDataProcess are some functions to preprocess data used in MoeSS
 
 ## ☀️ Previous contributors
 

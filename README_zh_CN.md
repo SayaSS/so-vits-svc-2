@@ -6,6 +6,10 @@
 
 #### ✨ 支持实时转换的一个客户端：[w-okada/voice-changer](https://github.com/w-okada/voice-changer)
 
+## 声明
+
+本项目为开源、离线的项目，SvcDevelopTeam的所有成员与本项目的所有开发者以及维护者（以下简称贡献者）对本项目没有控制力。本项目的贡献者从未向任何组织或个人提供包括但不限于数据集提取、数据集加工、算力支持、训练支持、推理等一切形式的帮助；本项目的贡献者不知晓也无法知晓使用者使用该项目的用途。故一切基于本项目训练的AI模型和合成的音频都与本项目贡献者无关。一切由此造成的问题由使用者自行承担。
+
 ## 📏 使用规约
 
 # Warning：请自行解决数据集授权问题，禁止使用非授权数据集进行训练！任何由于使用非授权数据集进行训练造成的问题，需自行承担全部责任和后果！与仓库、仓库维护者、svc develop team 无关！
@@ -13,8 +17,8 @@
 1. 本项目是基于学术交流目的建立，仅供交流与学习使用，并非为生产环境准备。
 2. 任何发布到视频平台的基于 sovits 制作的视频，都必须要在简介明确指明用于变声器转换的输入源歌声、音频，例如：使用他人发布的视频 / 音频，通过分离的人声作为输入源进行转换的，必须要给出明确的原视频、音乐链接；若使用是自己的人声，或是使用其他歌声合成引擎合成的声音作为输入源进行转换的，也必须在简介加以说明。
 3. 由输入源造成的侵权问题需自行承担全部责任和一切后果。使用其他商用歌声合成软件作为输入源时，请确保遵守该软件的使用条例，注意，许多歌声合成引擎使用条例中明确指明不可用于输入源进行转换！
-4. 继续使用视为已同意本仓库 README 所述相关条例，本仓库 README 已进行劝导义务，不对后续可能存在问题负责。
-5. 如将本仓库代码二次分发，或将由此项目产出的任何结果公开发表 (包括但不限于视频网站投稿)，请注明原作者及代码来源 (此仓库)。
+4. 禁止使用该项目从事违法行为与宗教、政治等活动，该项目维护者坚决抵制上述行为，不同意此条则禁止使用该项目。
+5. 继续使用视为已同意本仓库 README 所述相关条例，本仓库 README 已进行劝导义务，不对后续可能存在问题负责。
 6. 如果将此项目用于任何其他企划，请提前联系并告知本仓库作者，十分感谢。
 
 ## 🆕 Update!
@@ -34,10 +38,11 @@
 + 数据集制作、训练过程和3.0保持一致，但模型完全不通用，数据集也需要全部重新预处理
 + 增加了可选项 1：vc模式自动预测音高f0,即转换语音时不需要手动输入变调key，男女声的调能自动转换，但仅限语音转换，该模式转换歌声会跑调
 + 增加了可选项 2：通过kmeans聚类方案减小音色泄漏，即使得音色更加像目标音色
++ 增加了可选项 3：增加了[NSF-HIFIGAN增强器](https://github.com/yxlllc/DDSP-SVC)，对部分训练集少的模型有一定的音质增强效果，但是对训练好的模型有反面效果，默认关闭
 
 ## 💬 关于 Python 版本问题
 
-我们在进行测试后，认为 Python 3.8.9 版本能够稳定地运行该项目
+在进行测试后，我们认为`Python 3.8.9`能够稳定地运行该项目
 
 ## 📥 预先下载的模型文件
 
@@ -60,6 +65,20 @@ http://obs.cstcloud.cn/share/obs/sankagenkeshi/checkpoint_best_legacy_500.pt
 从svc-develop-team(待定)或任何其他地方获取
 
 虽然底模一般不会引起什么版权问题，但还是请注意一下，比如事先询问作者，又或者作者在模型描述中明确写明了可行的用途
+
+#### **可选项(根据情况选择)**
+
+如果使用NSF-HIFIGAN增强器的话，需要下载预训练的NSF-HIFIGAN模型，如果不需要可以不下载
+
++ 预训练的NSF-HIFIGAN声码器 ：[nsf_hifigan_20221211.zip](https://github.com/openvpi/vocoders/releases/download/nsf-hifigan-v1/nsf_hifigan_20221211.zip)
+  + 解压后，将四个文件放在`pretrain/nsf_hifigan`目录下
+
+```shell
+# nsf_hifigan
+https://github.com/openvpi/vocoders/releases/download/nsf-hifigan-v1/nsf_hifigan_20221211.zip
+# 也可手动下载放在pretrain/nsf_hifigan目录
+# 地址：https://github.com/openvpi/vocoders/releases/tag/nsf-hifigan-v1
+```
 
 ## 📊 数据集准备
 
@@ -89,19 +108,29 @@ dataset_raw
 
 ## 🛠️ 数据预处理
 
-1. 重采样至44100Hz单声道
+### 0. 音频切片
+
+将音频切片至`5s - 15s`, 稍微长点也无伤大雅，实在太长可能会导致训练中途甚至预处理就爆显存。
+
+可以使用[audio-slicer-GUI](https://github.com/flutydeer/audio-slicer)、[audio-slicer-CLI](https://github.com/openvpi/audio-slicer)
+
+一般情况下只需调整其中的`Minimum Interval`，普通陈述素材通常保持默认即可，歌唱素材可以调整至`100`甚至`50`
+
+切完之后手动删除过长过短的音频
+
+### 1. 重采样至44100Hz单声道
 
 ```shell
 python resample.py
 ```
 
-2. 自动划分训练集、验证集，以及自动生成配置文件
+### 2. 自动划分训练集、验证集，以及自动生成配置文件
 
 ```shell
 python preprocess_flist_config.py
 ```
 
-3. 生成hubert与f0
+### 3. 生成hubert与f0
 
 ```shell
 python preprocess_hubert_f0.py
@@ -144,6 +173,7 @@ python inference_main.py -m "logs/44k/G_30400.pth" -c "configs/config.json" -n "
 + `-a` | `--auto_predict_f0`：语音转换自动预测音高，转换歌声时不要打开这个会严重跑调
 + `-cm` | `--cluster_model_path`：聚类模型路径，如果没有训练聚类则随便填
 + `-cr` | `--cluster_infer_ratio`：聚类方案占比，范围0-1，若没有训练聚类模型则默认0即可
++ `-eh` | `--enhance`：是否使用NSF_HIFIGAN增强器,该选项对部分训练集少的模型有一定的音质增强效果，但是对训练好的模型有反面效果，默认关闭
 
 ## 🤔 可选项
 
@@ -162,23 +192,27 @@ python inference_main.py -m "logs/44k/G_30400.pth" -c "configs/config.json" -n "
 
 + 训练过程：
   + 使用cpu性能较好的机器训练，据我的经验在腾讯云6核cpu训练每个speaker需要约4分钟即可完成训练
-  + 执行python cluster/train_cluster.py ，模型的输出会在 logs/44k/kmeans_10000.pt
+  + 执行`python cluster/train_cluster.py` ，模型的输出会在`logs/44k/kmeans_10000.pt`
 + 推理过程：
-  + inference_main中指定cluster_model_path
-  + inference_main中指定cluster_infer_ratio，0为完全不使用聚类，1为只使用聚类，通常设置0.5即可
+  + `inference_main.py`中指定`cluster_model_path`
+  + `inference_main.py`中指定`cluster_infer_ratio`，`0`为完全不使用聚类，`1`为只使用聚类，通常设置`0.5`即可
 
 ### F0均值滤波
 
-介绍：对F0进行均值滤波，可以有效的减少因音高推测波动造成的哑音（由于混响或和声等造成的哑音暂时不能消除）。该功能在部分歌曲上提升巨大，如果歌曲推理后出现哑音可以考虑开启。
-+ 在inference_main中设置f0_mean_pooling为true即可
+介绍：对F0进行均值滤波，可以有效的减少因音高推测波动造成的哑音（由于混响或和声等造成的哑音暂时不能消除）。该功能在部分歌曲上提升巨大，但是在部分歌曲上会出现跑调的问题。如果歌曲推理后出现哑音可以考虑开启。
+
++ 在`inference_main.py`中设置`f0_mean_pooling`为true即可
 
 ### [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1kv-3y2DmZo0uya8pEr1xk7cSB-4e_Pct?usp=sharing) [sovits4_for_colab.ipynb](https://colab.research.google.com/drive/1kv-3y2DmZo0uya8pEr1xk7cSB-4e_Pct?usp=sharing)
 
-#### [23/03/16] 不再需要手动下载hubert
+**[23/03/16] 不再需要手动下载hubert**
+
+**[23/04/14] 支持NSF_HIFIGAN增强器**
 
 ## 📤 Onnx导出
 
 使用 [onnx_export.py](onnx_export.py)
+
 + 新建文件夹：`checkpoints` 并打开
 + 在`checkpoints`文件夹中新建一个文件夹作为项目文件夹，文件夹名为你的项目名称，比如`aziplayer`
 + 将你的模型更名为`model.pth`，配置文件更名为`config.json`，并放置到刚才创建的`aziplayer`文件夹下
@@ -189,9 +223,11 @@ python inference_main.py -m "logs/44k/G_30400.pth" -c "configs/config.json" -n "
 ### Onnx模型支持的UI
 
 + [MoeSS](https://github.com/NaruseMioShirakana/MoeSS)
-+ 我去除了所有的训练用函数和一切复杂的转置，一行都没有保留，因为我认为只有去除了这些东西，才知道你用的是Onnx
-+ 注意：Hubert Onnx模型请使用MoeSS提供的模型，目前无法自行导出（fairseq中Hubert有不少onnx不支持的算子和涉及到常量的东西，在导出时会报错或者导出的模型输入输出shape和结果都有问题）
-[Hubert4.0](https://huggingface.co/NaruseMioShirakana/MoeSS-SUBModel)
+  + [Hubert4.0](https://huggingface.co/NaruseMioShirakana/MoeSS-SUBModel)
+
+注意：Hubert Onnx模型请使用MoeSS提供的模型，目前无法自行导出（fairseq中Hubert有不少onnx不支持的算子和涉及到常量的东西，在导出时会报错或者导出的模型输入输出shape和结果都有问题）
+
+CppDataProcess中是一些在MoeSS里处理音频的功能
 
 ## ☀️ 旧贡献者
 
