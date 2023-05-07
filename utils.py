@@ -80,7 +80,7 @@ def normalize_f0(f0, x_mask, uv, random_scale=True):
         exit(0)
     return f0_norm * x_mask
 
-def compute_f0_uv_torchcrepe(wav_numpy, p_len=None, sampling_rate=44100, hop_length=512,device=None):
+def compute_f0_uv_torchcrepe(wav_numpy, p_len=None, sampling_rate=44100, hop_length=512,device=None,cr_threshold=0.05):
     from modules.crepe import CrepePitchExtractor
     x = wav_numpy
     if p_len is None:
@@ -90,7 +90,7 @@ def compute_f0_uv_torchcrepe(wav_numpy, p_len=None, sampling_rate=44100, hop_len
     
     f0_min = 50
     f0_max = 1100
-    F0Creper = CrepePitchExtractor(hop_length=hop_length,f0_min=f0_min,f0_max=f0_max,device=device)
+    F0Creper = CrepePitchExtractor(hop_length=hop_length,f0_min=f0_min,f0_max=f0_max,device=device,threshold=cr_threshold)
     f0,uv = F0Creper(x[None,:].float(),sampling_rate,pad_to=p_len)
     return f0,uv
 
@@ -119,9 +119,6 @@ def plot_data_to_numpy(x, y):
 
 
 def interpolate_f0(f0):
-    '''
-    对F0进行插值处理
-    '''
 
     data = np.reshape(f0, (f0.size, 1))
 
@@ -151,7 +148,7 @@ def interpolate_f0(f0):
                 for k in range(i, frame_number):
                     ip_data[k] = last_value
         else:
-            ip_data[i] = data[i] #这里可能存在一个没有必要的拷贝
+            ip_data[i] = data[i] # this may not be necessary
             last_value = data[i]
 
     return ip_data[:,0], vuv_vector[:,0]
@@ -205,7 +202,7 @@ def f0_to_coarse(f0):
 
   f0_mel[f0_mel <= 1] = 1
   f0_mel[f0_mel > f0_bin - 1] = f0_bin - 1
-  f0_coarse = (f0_mel + 0.5).long() if is_torch else np.rint(f0_mel).astype(np.int)
+  f0_coarse = (f0_mel + 0.5).int() if is_torch else np.rint(f0_mel).astype(np.int)
   assert f0_coarse.max() <= 255 and f0_coarse.min() >= 1, (f0_coarse.max(), f0_coarse.min())
   return f0_coarse
 

@@ -1,14 +1,21 @@
 # SoftVC VITS Singing Voice Conversion
 
-[**English**](./README.md) | [**中文简体**](./README_zh_CN.md)
+In the field of Singing Voice Conversion, there is not only one project, SoVitsSvc, but also many other projects, which will not be listed here. The project was officially discontinued for maintenance and Archived.
+However, there are still other enthusiasts who have created their own branches and continue to maintain the SoVitsSvc project (still unrelated to SvcDevelopTeam and the repository maintainers) and have made some big changes to it for you to find out for yourself.
 
 #### ✨ A fork with a greatly improved interface: [34j/so-vits-svc-fork](https://github.com/34j/so-vits-svc-fork)
 
 #### ✨ A client supports real-time conversion: [w-okada/voice-changer](https://github.com/w-okada/voice-changer)
 
-## Warning!!!
+#### This project is fundamentally different from Vits. Vits is TTS and this project is SVC. TTS cannot be carried out in this project, and Vits cannot carry out SVC, and the two project models are not universal
+
+## Disclaimer
 
 This project is an open source, offline project, and all members of SvcDevelopTeam and all developers and maintainers of this project (hereinafter referred to as contributors) have no control over this project.  The contributor of this project has never provided any organization or individual with any form of assistance, including but not limited to data set extraction, data set processing, computing support, training support, infering, etc.  Contributors to the project do not and cannot know what users are using the project for.  Therefore, all AI models and synthesized audio based on the training of this project have nothing to do with the contributors of this project.  All problems arising therefrom shall be borne by the user.
+
+This project is run completely offline and cannot collect any user information or obtain user input data. Therefore, contributors to this project are not aware of all user input and models and therefore are not responsible for any user input.
+
+This project is only a framework project, which does not have the function of speech synthesis itself, and all the functions require the user to train the model themselves. Meanwhile, there is no model attached to this project, and any secondary distributed project has nothing to do with the contributors of this project
 
 ## 📏 Terms of Use
 
@@ -24,6 +31,14 @@ This project is an open source, offline project, and all members of SvcDevelopTe
 ## 🆕 Update!
 
 > Updated the 4.0-v2 model, the entire process is the same as 4.0. Compared to 4.0, there is some improvement in certain scenarios, but there are also some cases where it has regressed. Please refer to the [4.0-v2 branch](https://github.com/svc-develop-team/so-vits-svc/tree/4.0-v2) for more information.
+
+## 📝 4.0 Feature list of branches
+
+| Branch        |     Feature      |  whether compatible with the main branch model |
+| :-------------: | :----------: | :------------:    |
+| 4.0              |   main branch   |        -     |
+| 4.0v2        |  The VISinger2 model is used  |        incompatibility     |
+| 4.0-Vec768-Layer12    |  The feature input is the Layer 12 Transformer output of the Content Vec  |       incompatibility     |
 
 ## 📝 Model Introduction
 
@@ -156,24 +171,24 @@ Use [inference_main.py](https://github.com/svc-develop-team/so-vits-svc/blob/4.0
 
 ```shell
 # Example
-python inference_main.py -m "logs/44k/G_30400.pth" -c "configs/config.json" -n "君の知らない物語-src.wav" -t 0 -s "nen"
+python inference_main.py -m "logs/44k/G_30400.pth" -c "configs/config.json" -s "nen" -n "君の知らない物語-src.wav" -t 0
 ```
 
 Required parameters:
-- `-m` | `--model_path`: path to the model.
-- `-c` | `--config_path`: path to the configuration file.
-- `-n` | `--clean_names`: a list of wav file names located in the raw folder.
-- `-t` | `--trans`: pitch adjustment, supports positive and negative (semitone) values.
-- `-s` | `--spk_list`: target speaker name for synthesis.
-- `-cl` | `--clip`: voice forced slicing, set to 0 to turn off(default), duration in seconds.
+- `-m` | `--model_path`: Path to the model.
+- `-c` | `--config_path`: Path to the configuration file.
+- `-s` | `--spk_list`: Target speaker name for conversion.
+- `-n` | `--clean_names`: A list of wav file names located in the raw folder.
+- `-t` | `--trans`: Pitch adjustment, supports positive and negative (semitone) values.
 
 Optional parameters: see the next section
-- `-lg` | `--linear_gradient`: The cross fade length of two audio slices in seconds. If there is a discontinuous voice after forced slicing, you can adjust this value. Otherwise, it is recommended to use the default value of 0.
+- `-a` | `--auto_predict_f0`: Automatic pitch prediction for voice conversion. Do not enable this when converting songs as it can cause serious pitch issues.
+- `-cl` | `--clip`: Voice forced slicing. Set to 0 to turn off(default), duration in seconds.
+- `-lg` | `--linear_gradient`: The cross fade length of two audio slices in seconds. If there is a discontinuous voice after forced slicing, you can adjust this value. Otherwise, it is recommended to use. Default 0.
+- `-cm` | `--cluster_model_path`: Path to the clustering model. Fill in any value if clustering is not trained.
+- `-cr` | `--cluster_infer_ratio`: Proportion of the clustering solution, range 0-1. Fill in 0 if the clustering model is not trained.
 - `-fmp` | `--f0_mean_pooling`: Apply mean filter (pooling) to f0, which may improve some hoarse sounds. Enabling this option will reduce inference speed.
-- `-a` | `--auto_predict_f0`: automatic pitch prediction for voice conversion, do not enable this when converting songs as it can cause serious pitch issues.
-- `-cm` | `--cluster_model_path`: path to the clustering model, fill in any value if clustering is not trained.
-- `-cr` | `--cluster_infer_ratio`: proportion of the clustering solution, range 0-1, fill in 0 if the clustering model is not trained.
-- `-eh` | `--enhance`: Whether to use NSF_HIFIGAN enhancer, this option has certain effect on sound quality enhancement for some models with few training sets, but has negative effect on well-trained models, so it is turned off by default.
+- `-eh` | `--enhance`: Whether to use NSF_HIFIGAN enhancer. This option has certain effect on sound quality enhancement for some models with few training sets, but has negative effect on well-trained models, so it is turned off by default.
 
 ## 🤔 Optional Settings
 
@@ -203,7 +218,7 @@ Introduction: The mean filtering of F0 can effectively reduce the hoarse sound c
 
 - Set `f0_mean_pooling` to true in `inference_main.py`
 
-### [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1kv-3y2DmZo0uya8pEr1xk7cSB-4e_Pct?usp=sharing) [sovits4_for_colab.ipynb](https://colab.research.google.com/drive/1kv-3y2DmZo0uya8pEr1xk7cSB-4e_Pct?usp=sharing)
+### [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/svc-develop-team/so-vits-svc/blob/4.0/sovits4_for_colab.ipynb) [sovits4_for_colab.ipynb](https://colab.research.google.com/github/svc-develop-team/so-vits-svc/blob/4.0/sovits4_for_colab.ipynb)
 
 **[23/03/16] No longer need to download hubert manually**
 
